@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private var author = Author()
     private var newsList: MutableList<News> = mutableListOf()
     private var pageNumber = 1
+    private var authorPageNumber = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -107,12 +108,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadAuthorNews(authorID: String) {
-        ServiceBuilder.buildService().getNewsFeedByAuthor(authorID)
+        ServiceBuilder.buildService().getNewsFeedByAuthor(authorID, authorPageNumber)
             .subscribeOn(Schedulers.io())
             .doOnNext {
                 moveToLocalDB(it)
                 newsList.addAll(localDB.newsDAO().getAllNewsByAuthor(authorID))
                 getAuthorInfo(authorID)
+                authorPageNumber++
             }
             .doOnError {
                 newsList.addAll(localDB.newsDAO().getAllNewsByAuthor(authorID))
@@ -172,7 +174,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadMoreNews(pageNumber: Int) {
-        loadHomePageNews(pageNumber) // or author ????????
+        val extras = intent.extras
+        if (extras != null && extras.containsKey(Constants.AUTHOR_CLICKED_ID)) {
+            author_info_layout.visibility = View.VISIBLE
+            val authorID = extras.getString(Constants.AUTHOR_CLICKED_ID).toString()
+            loadAuthorNews(authorID)
+        } else {
+            author_info_layout.visibility = View.GONE
+            loadHomePageNews(pageNumber)
+        }
     }
 
     private fun setAuthorLayout() {
@@ -201,6 +211,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             finishAffinity()
         }
+        authorPageNumber = 1
     }
 
 }

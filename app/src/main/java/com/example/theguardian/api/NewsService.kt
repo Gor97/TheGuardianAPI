@@ -33,7 +33,8 @@ interface NewsService {
 
     @GET("/{feed-path}?api-key=$API_KEY")
     fun getNewsFeedByAuthor(
-        @Path("feed-path", encoded = true) authorPath: String
+        @Path("feed-path", encoded = true) authorPath: String,
+        @Query("page") pageNumber: Int = 1
     ): Observable<FeedResponse>
 
 }
