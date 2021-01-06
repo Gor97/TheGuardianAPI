@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
+import com.example.theguardian.Constants
 import com.example.theguardian.R
 import com.example.theguardian.api.ServiceBuilder
 import com.example.theguardian.api.feedmodel.FeedResponse
@@ -42,9 +43,9 @@ class MainActivity : AppCompatActivity() {
         initRecyclerView(newsList)
 
         val extras = intent.extras
-        if (extras != null && extras.containsKey("author_clicked_id")) {
+        if (extras != null && extras.containsKey(Constants.AUTHOR_CLICKED_ID)) {
             author_info_layout.visibility = View.VISIBLE
-            val authorID = extras.getString("author_clicked_id").toString()
+            val authorID = extras.getString(Constants.AUTHOR_CLICKED_ID).toString()
             loadAuthorNews(authorID)
         } else {
             author_info_layout.visibility = View.GONE
@@ -63,7 +64,7 @@ class MainActivity : AppCompatActivity() {
         news_feed_recycler_view.adapter =
             CustomRecyclerAdapter(list, this@MainActivity) {
                 val intent = Intent(this, ArticleActivity::class.java).apply {
-                    putExtra("list_result_id", it.id)
+                    putExtra(Constants.LIST_ITEM_CLICKED_ID, it.id)
                 }
                 startActivity(intent)
             }
@@ -105,7 +106,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadAuthorNews(authorID : String) {
+    private fun loadAuthorNews(authorID: String) {
         ServiceBuilder.buildService().getNewsFeedByAuthor(authorID)
             .subscribeOn(Schedulers.io())
             .doOnNext {
@@ -195,7 +196,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onBackPressed() {
         val extras = intent.extras
-        if (extras != null && extras.containsKey("author_clicked_id")) {
+        if (extras != null && extras.containsKey(Constants.AUTHOR_CLICKED_ID)) {
             startActivity(Intent(this, MainActivity::class.java))
         } else {
             finishAffinity()

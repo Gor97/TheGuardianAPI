@@ -6,6 +6,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
+import com.example.theguardian.Constants
 import com.example.theguardian.R
 import com.example.theguardian.api.ServiceBuilder
 import com.example.theguardian.api.articlemodel.ArticleResponse
@@ -34,7 +35,7 @@ class ArticleActivity : AppCompatActivity() {
 
         setAuthorClick()
 
-        val newsID = intent.extras?.get("list_result_id") as String
+        val newsID = intent.extras?.get(Constants.LIST_ITEM_CLICKED_ID) as String
         ServiceBuilder.buildService().getArticle(newsID)
             .subscribeOn(Schedulers.io())
             .doOnNext { itRes ->
@@ -119,12 +120,12 @@ class ArticleActivity : AppCompatActivity() {
     }
 
     private fun setAuthorClick() {
-        article_author_name.setOnClickListener(View.OnClickListener {
+        article_author_name.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java).apply {
-                putExtra("author_clicked_id", authorID)
+                putExtra(Constants.AUTHOR_CLICKED_ID, authorID)
             }
             startActivity(intent)
-        })
+        }
     }
 
     override fun onBackPressed() {
