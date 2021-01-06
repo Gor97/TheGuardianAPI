@@ -10,7 +10,7 @@ interface SubjectDAO {
     @Query("SELECT * FROM Subject")
     fun getAllSubjects(): List<Subject>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertSubject(subject: Subject)
 
     @Update

@@ -38,10 +38,17 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
         initRecyclerView(newsList)
-        author_info_layout.visibility = View.GONE
-        if (newsList.isEmpty()) {
-            showNews()
+
+        val extras = intent.extras
+        if (extras != null && extras.containsKey("author_clicked_id")) {
+            author_info_layout.visibility = View.VISIBLE
+            val authorID = extras.getString("author_clicked_id").toString()
+            loadAuthorNews(authorID)
+        } else {
+            author_info_layout.visibility = View.GONE
+            loadHomePageNews()
         }
     }
 
@@ -66,7 +73,7 @@ class MainActivity : AppCompatActivity() {
                 if (!recyclerView.canScrollVertically(1)) {
                     progressBar.visibility = View.VISIBLE
                     pageNumber++
-                    showNews()
+                    loadMoreNews(pageNumber)
                 }
             }
         })
@@ -94,85 +101,77 @@ class MainActivity : AppCompatActivity() {
             }
             val subject = Subject(result.sectionId, result.sectionName)
             localDB.subjectDAO().insertSubject(subject)
-
-            newsList.add(news)
             localDB.newsDAO().insertNews(news)
         }
     }
 
-    private fun showNews() {
-        val extras = intent.extras
-        if (extras != null && extras.containsKey("author_clicked_id")) {
-            val result = extras.getString("author_clicked_id").toString()
-            ServiceBuilder.buildService().getNewsFeedByAuthor(result)
-                .subscribeOn(Schedulers.io())
-                .doOnNext {
-                    moveToLocalDB(it)
-                    newsList = localDB.newsDAO().getAllNewsByAuthor(result)
-                    getAuthorInfo(result)
+    private fun loadAuthorNews(authorID : String) {
+        ServiceBuilder.buildService().getNewsFeedByAuthor(authorID)
+            .subscribeOn(Schedulers.io())
+            .doOnNext {
+                moveToLocalDB(it)
+                newsList.addAll(localDB.newsDAO().getAllNewsByAuthor(authorID))
+                getAuthorInfo(authorID)
+            }
+            .doOnError {
+                newsList.addAll(localDB.newsDAO().getAllNewsByAuthor(authorID))
+                getAuthorInfo(authorID)
+            }
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(object : DisposableObserver<FeedResponse?>() {
+                override fun onNext(feedResponse: FeedResponse) {
+                    news_feed_recycler_view.adapter?.notifyDataSetChanged()
+                    progressBar.visibility = View.GONE
+                    setAuthorLayout()
+                    println(feedResponse)
                 }
-                .doOnError {
-                    newsList = localDB.newsDAO().getAllNewsByAuthor(result)
-                    getAuthorInfo(result)
+
+                override fun onError(e: Throwable) {
+                    news_feed_recycler_view.adapter?.notifyDataSetChanged()
+                    setAuthorLayout()
                 }
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(object : DisposableObserver<FeedResponse?>() {
-                    override fun onNext(feedResponse: FeedResponse) {
-                        initRecyclerView(newsList)
-                        news_feed_recycler_view.adapter?.notifyDataSetChanged()
-                        //progressBar.visibility = View.GONE
-                        setAuthorLayout()
-                        println(feedResponse)
-                    }
 
-                    override fun onError(e: Throwable) {
-                        initRecyclerView(newsList)
-                        //news_feed_recycler_view.adapter?.notifyDataSetChanged()
-
-                        setAuthorLayout()
-                        println("Network Error: Author")
-                    }
-
-                    override fun onComplete() { //onComplete not working when internet is off
-                        println("Done!")
-                    }
-                })
-        } else {
-            ServiceBuilder.buildService().getNewsFeed(pageNumber)
-                .subscribeOn(Schedulers.io())
-                .doOnNext {
-                    newsList.clear()
-                    moveToLocalDB(it)
+                override fun onComplete() {
+                    println("Done!")
                 }
-                .doOnError {
-                    newsList.clear()
-                    newsList = localDB.newsDAO().getAllNews()
+            })
+    }
+
+    private fun loadHomePageNews(pageNumber: Int = 1) {
+        ServiceBuilder.buildService().getNewsFeed(pageNumber)
+            .subscribeOn(Schedulers.io())
+            .doOnNext {
+                newsList.clear()
+                moveToLocalDB(it)
+                newsList.addAll(localDB.newsDAO().getAllNews())
+            }
+            .doOnError {
+                newsList.clear()
+                newsList.addAll(localDB.newsDAO().getAllNews())
+            }
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(object : DisposableObserver<FeedResponse?>() {
+                override fun onNext(feedResponse: FeedResponse) {
+                    Toast.makeText(this@MainActivity, "News from Web", Toast.LENGTH_SHORT)
+                        .show()
+                    news_feed_recycler_view.adapter?.notifyDataSetChanged()
+                    println(feedResponse)
                 }
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(object : DisposableObserver<FeedResponse?>() {
-                    override fun onNext(feedResponse: FeedResponse) {
-                        Toast.makeText(this@MainActivity, "News from Web", Toast.LENGTH_SHORT)
-                            .show()
-                        //initRecyclerView(newsList)
-                        news_feed_recycler_view.adapter?.notifyDataSetChanged()
 
-                        println(feedResponse)
-                    }
+                override fun onError(e: Throwable) {
+                    Toast.makeText(this@MainActivity, "News from Cache", Toast.LENGTH_SHORT)
+                        .show()
+                    news_feed_recycler_view.adapter?.notifyDataSetChanged()
+                }
 
-                    override fun onError(e: Throwable) {
-                        Toast.makeText(this@MainActivity, "News from Cache", Toast.LENGTH_SHORT)
-                            .show()
-                        //initRecyclerView(newsList)
-                        news_feed_recycler_view.adapter?.notifyDataSetChanged()
-                        println("Error + ${e}")
-                    }
+                override fun onComplete() {
+                    println("Done!")
+                }
+            })
+    }
 
-                    override fun onComplete() { //onComplete not working when internet is off
-                        println("Done!")
-                    }
-                })
-        }
-
+    private fun loadMoreNews(pageNumber: Int) {
+        loadHomePageNews(pageNumber) // or author ????????
     }
 
     private fun setAuthorLayout() {
@@ -204,71 +203,3 @@ class MainActivity : AppCompatActivity() {
     }
 
 }
-
-//test of different calls.
-/*   val call2: Call<ArticleResponse> = newsService.getArticle(news!!.response.results[0].id)
-   val response2: Response<ArticleResponse> = call2.execute()
-   article = response2.body()
-   Log.d("RESPONSE getArticle", article?.response.toString())
-
-
-
-   val call3: Call<FeedResponse> =
-       newsService.getNewsFeedBySection(news!!.response.results[0].sectionId)
-   val response3: Response<FeedResponse> = call3.execute()
-   val newsBySection = response3.body()
-   Log.d("RESPONSE newsBySection", newsBySection?.response.toString())
-
-
-
-
-   val call4: Call<FeedResponse> =
-       newsService.getNewsFeedByAuthor(article?.response?.content?.tags?.get(0)?.id.toString())
-   val response4: Response<FeedResponse> = call4.execute()
-   val newsByAuthor = response4.body()
-   Log.d("RESPONSE newsByAuthor", newsByAuthor?.response.toString())
-
-
-
-   val news: News = ApiToDBConverter.convertAPIToDBNews(article!!)
-   val author: Author = ApiToDBConverter.convertAPIToDBAuthor(article!!)
-   Log.d("NEWS", news.toString())
-   Log.d("AUTHOR", author.toString())*/
-
-
-//call example with coroutines
-/*
-        val call: Call<FeedResponse> = ServiceBuilder.buildService().getNewsFeed(pageNumber)
-        pageNumber++
-        call.enqueue(object : Callback<FeedResponse?> {
-            override fun onResponse(
-                call: Call<FeedResponse?>?,
-                response: Response<FeedResponse?>
-            ) {
-                if (response.isSuccessful) {
-                    GlobalScope.launch(Dispatchers.IO) {
-                        response.body()?.let { news = it } ?: Log.e(
-                            "Response error",
-                            "Body is NULL"
-                        )
-                        localDB.newsDAO().deleteAllNews()
-                        newsList = moveToLocalDB(news)
-                        withContext(Dispatchers.Main) {
-                            initRecyclerView(newsList)
-                        }
-                    }
-                } else {
-                    Log.e("Request error", response.errorBody().toString())
-                }
-            }
-
-            override fun onFailure(call: Call<FeedResponse?>?, t: Throwable) {
-                Log.e("Network error", t.toString())
-                GlobalScope.launch(Dispatchers.IO) {
-                    newsList = localDB.newsDAO().getAllNews()
-                    withContext(Dispatchers.Main) {
-                        initRecyclerView(newsList)
-                    }
-                }
-            }
-        })*/

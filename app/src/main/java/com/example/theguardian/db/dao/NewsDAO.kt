@@ -19,7 +19,7 @@ interface NewsDAO {
     @Query("SELECT * FROM NEWS WHERE id = :newsID")
     fun getNewsByID(newsID: String): News?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertNews(news: News)
 
     @Update

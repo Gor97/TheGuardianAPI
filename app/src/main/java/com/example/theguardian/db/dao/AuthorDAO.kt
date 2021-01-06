@@ -9,7 +9,7 @@ interface AuthorDAO {
     @Query("SELECT * FROM Author")
     fun getAllAuthor(): List<Author>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertAuthor(author: Author)
 
     @Update

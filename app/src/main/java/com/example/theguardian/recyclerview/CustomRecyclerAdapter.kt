@@ -1,21 +1,14 @@
 package com.example.theguardian.recyclerview
 
 import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.theguardian.R
-import com.example.theguardian.api.feedmodel.FeedResponse
 import com.example.theguardian.db.NewsDatabase
 import com.example.theguardian.db.dbobjects.News
-import com.example.theguardian.db.dbobjects.Subject
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.observers.DisposableObserver
-import io.reactivex.schedulers.Schedulers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -41,8 +34,9 @@ class CustomRecyclerAdapter(
         holder.dateTextView?.text = values[holder.adapterPosition].datePublished
         holder.sectionTextView?.text = values[holder.adapterPosition].sectionID
         GlobalScope.launch(Dispatchers.IO) {
-            val subjectName = localDB.subjectDAO().getSectionNameByID(values[holder.adapterPosition].sectionID)
-            withContext(Dispatchers.Main){
+            val subjectName =
+                localDB.subjectDAO().getSectionNameByID(values[holder.adapterPosition].sectionID)
+            withContext(Dispatchers.Main) {
                 holder.sectionTextView?.text = subjectName
             }
         }
@@ -54,6 +48,7 @@ class CustomRecyclerAdapter(
         var titleTextView: TextView? = null
         var sectionTextView: TextView? = null
         var dateTextView: TextView? = null
+
         init {
             titleTextView = itemView.findViewById(R.id.news_title_textView)
             sectionTextView = itemView.findViewById(R.id.news_section_textView)

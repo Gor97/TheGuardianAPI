@@ -17,12 +17,6 @@ abstract class NewsDatabase : RoomDatabase() {
     abstract fun authorDAO(): AuthorDAO
     abstract fun subjectDAO(): SubjectDAO
 
-    private fun clearCache() {
-        newsDAO().deleteAllNews()
-        authorDAO().deleteAllAuthor()
-        subjectDAO().deleteAllSubject()
-    }
-
     companion object {
         @Volatile
         private var INSTANCE: NewsDatabase? = null

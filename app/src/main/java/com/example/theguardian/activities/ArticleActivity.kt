@@ -31,6 +31,7 @@ class ArticleActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_article)
+
         setAuthorClick()
 
         val newsID = intent.extras?.get("list_result_id") as String
@@ -121,7 +122,6 @@ class ArticleActivity : AppCompatActivity() {
         article_author_name.setOnClickListener(View.OnClickListener {
             val intent = Intent(this, MainActivity::class.java).apply {
                 putExtra("author_clicked_id", authorID)
-                println("AUTHOR CLICKED $authorID")
             }
             startActivity(intent)
         })
@@ -131,49 +131,3 @@ class ArticleActivity : AppCompatActivity() {
         finish()
     }
 }
-
-
-/*
-val call: Call<ArticleResponse> = ServiceBuilder.buildService().getArticle(newsID)
-        call.enqueue(object : Callback<ArticleResponse?> {
-            override fun onResponse(
-                call: Call<ArticleResponse?>?,
-                response: Response<ArticleResponse?>
-            ) {
-                if (response.isSuccessful) {
-                    GlobalScope.launch(Dispatchers.IO) {
-                        response.body()?.let { article = it } ?: Log.d(
-                            "Response error",
-                            "Body is NULL"
-                        )
-                        updateNewsInfo(newsID)
-                        text = localDB.newsDAO().getNewsByID(newsID)?.fullText.toString()
-                        url = localDB.newsDAO().getNewsByID(newsID)?.imageURL.toString()
-                        withContext(Dispatchers.Main) {
-                            article_text_view.text = text
-                            Glide.with(this@ArticleActivity)
-                                .load(url)
-                                .into(article_image_view)
-                        }
-                    }
-                }
-            }
-
-            override fun onFailure(call: Call<ArticleResponse?>, t: Throwable) {
-                println("Network Error :: " + t.localizedMessage)
-                GlobalScope.launch(Dispatchers.IO) {
-                    localDB.newsDAO().getNewsByID(newsID)?.let {
-                        text = it.fullText; url = it.imageURL
-                    } ?: run { text = "No Internet" }
-
-                    withContext(Dispatchers.Main) {
-                        article_text_view.text = text
-                        Glide.with(this@ArticleActivity)
-                            .load(url)
-                            .into(article_image_view)
-                    }
-                }
-            }
-        })
-
- */
